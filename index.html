@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>World Clock Widget</title>
+
+<style>
+body {
+    margin: 0;
+    background: #0d0d0d;
+    font-family: Arial, Helvetica, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* container */
+.wrapper {
+    display: flex;
+    gap: 20px;
+}
+
+/* card */
+.card {
+    background: #1a1a1a;
+    padding: 25px 40px;
+    text-align: center;
+    border-radius: 6px;
+    min-width: 180px;
+}
+
+/* city */
+.city {
+    font-size: 28px;
+    font-weight: 700;
+    color: #e6e6e6;
+    margin-bottom: 10px;
+}
+
+/* time */
+.time {
+    font-size: 32px;
+    font-weight: 700;
+    color: #ffffff;
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+    <div class="card">
+        <div class="city">Los Angeles</div>
+        <div class="time" id="la"></div>
+    </div>
+
+    <div class="card">
+        <div class="city">New York</div>
+        <div class="time" id="ny"></div>
+    </div>
+
+    <div class="card">
+        <div class="city">London</div>
+        <div class="time" id="lon"></div>
+    </div>
+
+    <div class="card">
+        <div class="city">Paris</div>
+        <div class="time" id="par"></div>
+    </div>
+
+    <div class="card">
+        <div class="city">Beijing</div>
+        <div class="time" id="bei"></div>
+    </div>
+
+    <div class="card">
+        <div class="city">Tokyo</div>
+        <div class="time" id="tok"></div>
+    </div>
+</div>
+
+<script>
+function updateClocks() {
+    const options = { hour: '2-digit', minute: '2-digit', hour12: false };
+
+    document.getElementById('la').innerText =
+        new Date().toLocaleTimeString('en-US', { ...options, timeZone: 'America/Los_Angeles' });
+
+    document.getElementById('ny').innerText =
+        new Date().toLocaleTimeString('en-US', { ...options, timeZone: 'America/New_York' });
+
+    document.getElementById('lon').innerText =
+        new Date().toLocaleTimeString('en-GB', { ...options, timeZone: 'Europe/London' });
+
+    document.getElementById('par').innerText =
+        new Date().toLocaleTimeString('fr-FR', { ...options, timeZone: 'Europe/Paris' });
+
+    document.getElementById('bei').innerText =
+        new Date().toLocaleTimeString('zh-CN', { ...options, timeZone: 'Asia/Shanghai' });
+
+    document.getElementById('tok').innerText =
+        new Date().toLocaleTimeString('ja-JP', { ...options, timeZone: 'Asia/Tokyo' });
+}
+
+updateClocks();
+setInterval(updateClocks, 1000);
+</script>
+
+</body>
+</html>
