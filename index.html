@@ -2,91 +2,170 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>World Clock Widget</title>
-
-<!-- FONT -->
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+<title>Earthquake Scroll Ticker</title>
 
 <style>
 body {
     margin: 0;
-    background: #0b0b0b;
-    font-family: 'Montserrat', sans-serif;
+    background: transparent;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+/* VIEWPORT (OBS si oreže šírku) */
+#viewport {
+    width: 100%;
+    height: 70px;
+    overflow: hidden;
+    background: rgba(0,0,0,0.75);
+}
+
+/* TRACK ktorý sa hýbe */
+#track {
     display: flex;
-    justify-content: center;
+    width: max-content;
+    animation: scroll 40s linear infinite;
+}
+
+/* BOX */
+.box {
+    display: flex;
     align-items: center;
-    height: 100vh;
+    padding: 5px 20px;
+    color: white;
+    border-right: 1px solid rgba(255,255,255,0.15);
+    min-width: 320px;
 }
 
-/* container */
-.wrapper {
-    display: flex;
-    gap: 14px;
+/* MAG */
+.mag {
+    font-size: 40px;
+    font-weight: bold;
+    margin-right: 15px;
+    min-width: 65px;
 }
 
-/* card */
-.card {
-    background: #2a2a2a;
-    padding: 16px 26px;
-    text-align: center;
-    border-radius: 4px;
-    min-width: 150px;
+/* INFO */
+.info {
+    flex: 1;
+    overflow: hidden;
 }
 
-/* city */
-.city {
-    font-size: 22px;
-    font-weight: 800;
-    color: #f0f0f0;
-    margin-bottom: 4px;
-    letter-spacing: 0.3px;
+.loc {
+    font-size: 16px;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* time */
+.depth {
+    font-size: 14px;
+    opacity: 0.85;
+}
+
+/* TIME */
 .time {
-    font-size: 26px;
-    font-weight: 700;
-    color: #ffffff;
+    background: rgba(255,255,255,0.9);
+    color: black;
+    padding: 5px 10px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    margin-left: 10px;
+    white-space: nowrap;
 }
+
+/* ANIMÁCIA */
+@keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
 </style>
 </head>
 
 <body>
 
-<div class="wrapper">
-    <div class="card"><div class="city">Los Angeles</div><div class="time" id="la"></div></div>
-    <div class="card"><div class="city">New York</div><div class="time" id="ny"></div></div>
-    <div class="card"><div class="city">London</div><div class="time" id="lon"></div></div>
-    <div class="card"><div class="city">Paris</div><div class="time" id="par"></div></div>
-    <div class="card"><div class="city">Beijing</div><div class="time" id="bei"></div></div>
-    <div class="card"><div class="city">Tokyo</div><div class="time" id="tok"></div></div>
+<div id="viewport">
+    <div id="track"></div>
 </div>
 
 <script>
-function updateClocks() {
-    const options = { hour: '2-digit', minute: '2-digit', hour12: false };
 
-    document.getElementById('la').innerText =
-        new Date().toLocaleTimeString('en-US', { ...options, timeZone: 'America/Los_Angeles' });
+let earthquakes = [];
 
-    document.getElementById('ny').innerText =
-        new Date().toLocaleTimeString('en-US', { ...options, timeZone: 'America/New_York' });
+/* čas */
+function getTimeAgo(timestamp) {
+    const now = Date.now();
+    const diff = Math.floor((now - timestamp) / 60000);
 
-    document.getElementById('lon').innerText =
-        new Date().toLocaleTimeString('en-GB', { ...options, timeZone: 'Europe/London' });
-
-    document.getElementById('par').innerText =
-        new Date().toLocaleTimeString('fr-FR', { ...options, timeZone: 'Europe/Paris' });
-
-    document.getElementById('bei').innerText =
-        new Date().toLocaleTimeString('zh-CN', { ...options, timeZone: 'Asia/Shanghai' });
-
-    document.getElementById('tok').innerText =
-        new Date().toLocaleTimeString('ja-JP', { ...options, timeZone: 'Asia/Tokyo' });
+    if (diff < 1) return "Just now";
+    if (diff === 1) return "1 min ago";
+    return diff + " min ago";
 }
 
-updateClocks();
-setInterval(updateClocks, 1000);
+/* fetch */
+async function fetchData() {
+    try {
+        const res = await fetch("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson");
+        const data = await res.json();
+
+        earthquakes = data.features
+            .sort((a, b) => b.properties.time - a.properties.time)
+            .slice(0, 6)
+            .map(eq => ({
+                mag: eq.properties.mag ? eq.properties.mag.toFixed(1) : "0.0",
+                place: eq.properties.place,
+                depth: eq.geometry.coordinates[2].toFixed(1),
+                time: eq.properties.time
+            }));
+
+        render();
+
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+/* render + DUPLIKÁCIA kvôli loopu */
+function render() {
+    const track = document.getElementById("track");
+    track.innerHTML = "";
+
+    let content = "";
+
+    earthquakes.forEach(eq => {
+        content += `
+        <div class="box">
+            <div class="mag">${eq.mag}</div>
+            <div class="info">
+                <div class="loc">${eq.place}</div>
+                <div class="depth">Depth: ${eq.depth} km</div>
+            </div>
+            <div class="time" data-time="${eq.time}">
+                ${getTimeAgo(eq.time)}
+            </div>
+        </div>`;
+    });
+
+    // DUPLIKÁCIA → seamless scroll
+    track.innerHTML = content + content;
+}
+
+/* update časov */
+function updateTimes() {
+    document.querySelectorAll(".time").forEach(el => {
+        const t = parseInt(el.getAttribute("data-time"));
+        el.textContent = getTimeAgo(t);
+    });
+}
+
+/* init */
+fetchData();
+setInterval(fetchData, 60000);
+setInterval(updateTimes, 60000);
+
 </script>
 
 </body>
